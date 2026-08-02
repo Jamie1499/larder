@@ -1,6 +1,6 @@
 import { parseLegacyIngredientLine, classifyLine } from "./ingredients.js";
 import { appendLine } from "./voice.js";
-import { addIngredientRow } from "./modal.js";
+import { addIngredientRow, removeEmptyIngredientRows } from "./modal.js";
 
 // ---------- Photo scanning (on-device OCR) ----------
 export function resetImportTools() {
@@ -55,10 +55,13 @@ export async function handlePhotoScan(files) {
       return;
     }
 
+    const classified = allLines.map((line) => [line, classifyLine(line)]);
+    if (classified.some(([, kind]) => kind === "ingredient")) removeEmptyIngredientRows();
+
     let ingredientCount = 0;
     let stepCount = 0;
-    allLines.forEach((line) => {
-      if (classifyLine(line) === "ingredient") {
+    classified.forEach(([line, kind]) => {
+      if (kind === "ingredient") {
         addIngredientRow(parseLegacyIngredientLine(line));
         ingredientCount++;
       } else {

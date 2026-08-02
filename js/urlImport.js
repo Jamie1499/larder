@@ -1,7 +1,7 @@
 import { supabase } from "./supabaseClient.js";
 import { parseLegacyIngredientLine } from "./ingredients.js";
 import { appendLine, setValueAndNotify } from "./voice.js";
-import { addIngredientRow } from "./modal.js";
+import { addIngredientRow, removeEmptyIngredientRows } from "./modal.js";
 
 // ---------- Recipe import from a URL ----------
 // Delegates the actual fetch to a Supabase Edge Function (server-side, so it
@@ -42,6 +42,7 @@ export function setupUrlImport() {
       if (recipe.title && !titleField.value.trim()) setValueAndNotify(titleField, recipe.title);
 
       const ingredients = recipe.ingredients || [];
+      if (ingredients.length) removeEmptyIngredientRows();
       ingredients.forEach((line) => addIngredientRow(parseLegacyIngredientLine(line)));
 
       const steps = recipe.steps || [];

@@ -23,6 +23,21 @@ export function addIngredientRow(data) {
   ingredientRowsEl().appendChild(row);
 }
 
+// Clears out any still-blank ingredient rows (e.g. the default empty row a
+// new recipe starts with) before a photo/URL import adds real ones, so the
+// import doesn't leave a stray empty row mixed in with the results.
+export function removeEmptyIngredientRows() {
+  ingredientRowsEl()
+    .querySelectorAll(".ingredient-row")
+    .forEach((row) => {
+      const isBlank =
+        !row.querySelector(".ing-qty").value.trim() &&
+        !row.querySelector(".ing-unit").value &&
+        !row.querySelector(".ing-name").value.trim();
+      if (isBlank) row.remove();
+    });
+}
+
 function renderIngredientRows(ingredients) {
   ingredientRowsEl().innerHTML = "";
   if (ingredients && ingredients.length) {
