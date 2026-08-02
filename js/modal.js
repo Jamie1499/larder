@@ -1,8 +1,9 @@
 import { recipes, currentView, currentRecipeId, setCurrentRecipeId } from "./state.js";
 import { saveRecipes } from "./storage.js";
 import { parseQtyInput, normalizeUnit, formatQty, parseLegacyIngredientLine } from "./ingredients.js";
-import { setupSingleShotMic, setupContinuousMic, stopActiveRecognition, appendLine } from "./voice.js";
+import { setupSingleShotMic, setupContinuousMic, stopActiveRecognition, appendLine, setValueAndNotify } from "./voice.js";
 import { handlePhotoScan, resetImportTools } from "./ocr.js";
+import { setupUrlImport } from "./urlImport.js";
 import { render } from "./render.js";
 
 // ---------- Modal (add/edit) ----------
@@ -56,7 +57,7 @@ export function setupModal() {
   document.getElementById("add-ingredient-btn").addEventListener("click", () => addIngredientRow());
 
   setupSingleShotMic(document.getElementById("title-mic-btn"), (text) => {
-    document.getElementById("f-title").value = text;
+    setValueAndNotify(document.getElementById("f-title"), text);
   });
   setupSingleShotMic(document.getElementById("voice-ingredient-btn"), (text) => {
     addIngredientRow(parseLegacyIngredientLine(text));
@@ -69,10 +70,12 @@ export function setupModal() {
     document.getElementById("photo-input").click();
   });
   document.getElementById("photo-input").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) handlePhotoScan(file);
+    const files = [...e.target.files];
+    if (files.length) handlePhotoScan(files);
     e.target.value = "";
   });
+
+  setupUrlImport();
 
   form.addEventListener("submit", (e) => {
     const title = document.getElementById("f-title").value.trim();

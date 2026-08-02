@@ -3,13 +3,22 @@ let activeRecognition = null;
 
 export function stopActiveRecognition() {
   if (activeRecognition) {
-    activeRecognition.stop();
+    const r = activeRecognition;
     activeRecognition = null;
+    r.abort();
   }
 }
 
 function getSpeechRecognition() {
   return window.SpeechRecognition || window.webkitSpeechRecognition;
+}
+
+// Sets a form field's value programmatically and notifies listeners — some
+// mobile browsers don't repaint a text field after a JS-only .value write
+// until it's dispatched an input event (or the field gets focus/blur).
+export function setValueAndNotify(el, value) {
+  el.value = value;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 // Single utterance -> one callback with the final transcript (e.g. dictate a title).
@@ -21,9 +30,20 @@ export function setupSingleShotMic(button, onResult) {
     return;
   }
   let recognition = null;
+
+  function stopAndReset() {
+    if (recognition) {
+      const r = recognition;
+      recognition = null;
+      if (activeRecognition === r) activeRecognition = null;
+      r.abort();
+    }
+    button.classList.remove("recording");
+  }
+
   button.addEventListener("click", () => {
     if (recognition) {
-      recognition.stop();
+      stopAndReset();
       return;
     }
     recognition = new SR();
@@ -31,16 +51,8 @@ export function setupSingleShotMic(button, onResult) {
     recognition.lang = "en-GB";
     recognition.interimResults = false;
     recognition.onresult = (e) => onResult(e.results[0][0].transcript.trim());
-    recognition.onerror = () => {
-      button.classList.remove("recording");
-      recognition = null;
-      activeRecognition = null;
-    };
-    recognition.onend = () => {
-      button.classList.remove("recording");
-      recognition = null;
-      activeRecognition = null;
-    };
+    recognition.onerror = stopAndReset;
+    recognition.onend = stopAndReset;
     button.classList.add("recording");
     recognition.start();
   });
@@ -56,9 +68,21 @@ export function setupContinuousMic(button, onFinal) {
   }
   let recognition = null;
   const originalLabel = button.textContent;
+
+  function stopAndReset() {
+    if (recognition) {
+      const r = recognition;
+      recognition = null;
+      if (activeRecognition === r) activeRecognition = null;
+      r.abort();
+    }
+    button.classList.remove("recording");
+    button.textContent = originalLabel;
+  }
+
   button.addEventListener("click", () => {
     if (recognition) {
-      recognition.stop();
+      stopAndReset();
       return;
     }
     recognition = new SR();
@@ -71,18 +95,8 @@ export function setupContinuousMic(button, onFinal) {
         if (e.results[i].isFinal) onFinal(e.results[i][0].transcript.trim());
       }
     };
-    recognition.onerror = () => {
-      button.classList.remove("recording");
-      button.textContent = originalLabel;
-      recognition = null;
-      activeRecognition = null;
-    };
-    recognition.onend = () => {
-      button.classList.remove("recording");
-      button.textContent = originalLabel;
-      recognition = null;
-      activeRecognition = null;
-    };
+    recognition.onerror = stopAndReset;
+    recognition.onend = stopAndReset;
     button.classList.add("recording");
     button.textContent = "⏹ Stop";
     recognition.start();
@@ -90,5 +104,5 @@ export function setupContinuousMic(button, onFinal) {
 }
 
 export function appendLine(textarea, line) {
-  textarea.value = textarea.value ? textarea.value + "\n" + line : line;
+  setValueAndNotify(textarea, textarea.value ? textarea.value + "\n" + line : line);
 }

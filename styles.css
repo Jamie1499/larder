@@ -546,6 +546,18 @@ dialog#recipe-modal::backdrop {
   margin-top: -0.3rem;
 }
 
+#import-url-input {
+  flex: 1;
+  min-width: 200px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
 .ocr-results {
   list-style: none;
   padding: 0;

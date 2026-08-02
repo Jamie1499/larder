@@ -105,6 +105,38 @@ export function parseLegacyIngredientLine(raw) {
   return { qty, unit, name: (name || line).trim() };
 }
 
+// Common cooking-instruction verbs — a line opening with one of these is
+// almost always a method step even when short and unpunctuated
+// ("Bake for 20 minutes", "Mix everything together").
+const STEP_VERBS = [
+  "preheat", "heat", "cook", "bake", "roast", "grill", "fry", "saute", "sauté",
+  "boil", "simmer", "steam", "mix", "stir", "whisk", "fold", "combine", "blend",
+  "add", "pour", "sprinkle", "season", "drizzle", "garnish", "serve", "cover",
+  "remove", "drain", "chop", "slice", "dice", "mince", "peel", "cut", "place",
+  "put", "transfer", "arrange", "spread", "layer", "top", "set", "turn",
+  "reduce", "increase", "continue", "repeat", "divide", "wrap", "refrigerate",
+  "freeze", "warm", "melt", "mash", "discard", "taste", "adjust", "check",
+  "knead", "rest", "let", "allow", "line", "grease", "preheat",
+];
+
+// Guesses whether a line of scanned/imported text is an ingredient or a
+// method step, so photo/URL imports can auto-fill the right field instead of
+// requiring the user to place every line by hand.
+export function classifyLine(line) {
+  const trimmed = line.trim();
+  const hasLeadingQty = /^(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\b/.test(trimmed);
+  const hasUnitWord = UNITS.some((u) => new RegExp(`\\b${u}\\b`, "i").test(trimmed));
+  const startsWithStepVerb = STEP_VERBS.some((v) => new RegExp(`^${v}\\b`, "i").test(trimmed));
+  const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+  const looksLikeSentence = /[.!]\s*$/.test(trimmed) || wordCount > 12;
+
+  if (hasLeadingQty) return "ingredient";
+  if (startsWithStepVerb || looksLikeSentence) return "step";
+  if (hasUnitWord) return "ingredient";
+  if (wordCount <= 6) return "ingredient";
+  return "step";
+}
+
 // Converts any legacy string-based ingredient lists into structured objects.
 // Returns true if the recipe list needed migrating (caller should persist).
 export function migrateRecipes(recipes) {
