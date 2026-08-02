@@ -1,7 +1,14 @@
 import { supabase } from "./supabaseClient.js";
 
-// ---------- Storage (shared, backed by Supabase) ----------
-// All signed-in users read and write the same rows — there's no per-user data.
+// ---------- Storage (backed by Supabase) ----------
+// Recipes are shared across every signed-in user. The shopping list
+// (selection + checked items) is per-user, keyed by auth.uid().
+
+async function currentUserId() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) console.error(error);
+  return data?.user?.id;
+}
 
 export async function loadRecipes() {
   const { data, error } = await supabase.from("recipes").select("id, data");
@@ -25,23 +32,27 @@ export async function saveRecipes(recipes) {
 }
 
 export async function loadSelection() {
-  const { data, error } = await supabase.from("shopping_state").select("selection").eq("id", 1).maybeSingle();
+  const userId = await currentUserId();
+  const { data, error } = await supabase.from("shopping_state").select("selection").eq("user_id", userId).maybeSingle();
   if (error) console.error(error);
   return new Set(data?.selection || []);
 }
 
 export async function saveSelection(set) {
-  const { error } = await supabase.from("shopping_state").upsert({ id: 1, selection: [...set] });
+  const userId = await currentUserId();
+  const { error } = await supabase.from("shopping_state").upsert({ user_id: userId, selection: [...set] });
   if (error) console.error(error);
 }
 
 export async function loadChecked() {
-  const { data, error } = await supabase.from("shopping_state").select("checked").eq("id", 1).maybeSingle();
+  const userId = await currentUserId();
+  const { data, error } = await supabase.from("shopping_state").select("checked").eq("user_id", userId).maybeSingle();
   if (error) console.error(error);
   return new Set(data?.checked || []);
 }
 
 export async function saveChecked(set) {
-  const { error } = await supabase.from("shopping_state").upsert({ id: 1, checked: [...set] });
+  const userId = await currentUserId();
+  const { error } = await supabase.from("shopping_state").upsert({ user_id: userId, checked: [...set] });
   if (error) console.error(error);
 }
