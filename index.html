@@ -19,13 +19,31 @@
       </svg>
       Larder
     </h1>
-    <nav class="tabs">
+    <nav class="tabs hidden" id="main-tabs">
       <button class="tab-btn active" data-view="recipes">Recipes</button>
       <button class="tab-btn" data-view="shopping">Shopping List <span id="shopping-count" class="badge hidden">0</span></button>
     </nav>
+    <button type="button" class="btn ghost small hidden" id="signout-btn">Sign out</button>
   </header>
 
-  <main id="app"></main>
+  <div id="login-screen" class="login-screen">
+    <form id="login-form" class="login-form">
+      <h2>Sign in</h2>
+      <p class="hint">Ask Jamie for an invite if you don't have an account yet.</p>
+      <label>
+        Email
+        <input type="email" id="login-email" required autocomplete="username" />
+      </label>
+      <label>
+        Password
+        <input type="password" id="login-password" required autocomplete="current-password" />
+      </label>
+      <div id="login-error" class="login-error hidden"></div>
+      <button type="submit" class="btn primary" id="login-submit-btn">Sign in</button>
+    </form>
+  </div>
+
+  <main id="app" class="hidden"></main>
 
   <!-- Recipe add/edit modal -->
   <dialog id="recipe-modal">
@@ -138,6 +156,7 @@
     </div>
   </template>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script type="module" src="app.js"></script>
 </body>
