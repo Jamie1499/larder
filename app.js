@@ -5,11 +5,13 @@ import { setRecipes, setSelection, setChecked, setCurrentView, setCurrentRecipeI
 import { setupModal } from "./js/modal.js";
 import { render } from "./js/render.js";
 import { setupAuth } from "./js/auth.js";
+import { loadCurrentUser } from "./js/currentUser.js";
 
 let tabsReady = false;
 let modalReady = false;
 
 async function init() {
+  await loadCurrentUser();
   await seedIfEmpty();
   const recipes = await loadRecipes();
   if (migrateRecipes(recipes)) saveRecipes(recipes);

@@ -59,6 +59,16 @@
         </div>
       </label>
 
+      <div class="image-field">
+        <img id="recipe-image-preview" class="recipe-image-preview hidden" alt="" />
+        <div class="image-field-row">
+          <button type="button" id="add-image-btn" class="btn small ghost">🖼️ Add photo</button>
+          <span id="image-status" class="hint hidden"></span>
+        </div>
+        <input type="file" id="recipe-image-input" accept="image/*" hidden />
+        <input type="hidden" id="recipe-image-url" />
+      </div>
+
       <div class="import-row">
         <button type="button" id="scan-photo-btn" class="btn small ghost">📷 Scan photo(s)</button>
         <button type="button" id="url-import-btn" class="btn small ghost">🔗 Import from URL</button>

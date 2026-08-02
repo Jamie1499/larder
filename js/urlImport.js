@@ -1,7 +1,7 @@
 import { supabase } from "./supabaseClient.js";
 import { parseLegacyIngredientLine } from "./ingredients.js";
 import { appendLine, setValueAndNotify } from "./voice.js";
-import { addIngredientRow, removeEmptyIngredientRows } from "./modal.js";
+import { addIngredientRow, removeEmptyIngredientRows, setRecipeImage } from "./modal.js";
 
 // ---------- Recipe import from a URL ----------
 // Delegates the actual fetch to a Supabase Edge Function (server-side, so it
@@ -48,6 +48,10 @@ export function setupUrlImport() {
       const steps = recipe.steps || [];
       const stepsField = document.getElementById("f-steps");
       steps.forEach((line) => appendLine(stepsField, line));
+
+      if (recipe.image && !document.getElementById("recipe-image-url").value) {
+        setRecipeImage(recipe.image);
+      }
 
       if (!ingredients.length && !steps.length) {
         status.textContent = "Couldn't find a recipe on that page. Try scanning a photo instead.";

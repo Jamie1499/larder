@@ -8,3 +8,8 @@ export function escapeHtml(str) {
 export function escapeAttr(str) {
   return escapeHtml(str).replace(/"/g, "&quot;");
 }
+
+// "jamie.patrick@me.com" -> "jamie.patrick", for a lightweight "added by" label.
+export function formatCreatedBy(email) {
+  return email ? email.split("@")[0] : "";
+}

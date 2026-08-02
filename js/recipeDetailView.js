@@ -1,7 +1,7 @@
 import { recipes, selection, currentRecipeId, setCurrentView, setRecipes } from "./state.js";
 import { saveRecipes, saveSelection } from "./storage.js";
 import { formatIngredient } from "./ingredients.js";
-import { escapeHtml } from "./utils.js";
+import { escapeHtml, escapeAttr, formatCreatedBy } from "./utils.js";
 import { app } from "./dom.js";
 import { openModal } from "./modal.js";
 import { updateTabs, render } from "./render.js";
@@ -17,10 +17,11 @@ export function renderRecipeDetail() {
 
   app.innerHTML = `
     <button class="back-link" id="back-btn">← Back to recipes</button>
+    ${r.imageUrl ? `<img class="recipe-detail-image" src="${escapeAttr(r.imageUrl)}" alt="" />` : ""}
     <div class="detail-header">
       <div>
         <h2 style="margin:0 0 0.25rem;">${escapeHtml(r.title)}</h2>
-        <div class="recipe-meta">${r.servings} servings</div>
+        <div class="recipe-meta">${r.servings} servings${r.createdBy ? ` · Added by ${escapeHtml(formatCreatedBy(r.createdBy))}` : ""}</div>
         <div class="tag-list" style="margin-top:0.5rem;">${r.tags.map((t) => `<span class="tag-chip">${escapeHtml(t)}</span>`).join("")}</div>
       </div>
       <div class="detail-actions">

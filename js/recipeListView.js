@@ -29,6 +29,7 @@ function renderRecipeCard(r) {
   const isSelected = selection.has(r.id);
   return `
     <div class="recipe-card" data-id="${r.id}">
+      ${r.imageUrl ? `<img class="recipe-card-image" src="${escapeAttr(r.imageUrl)}" alt="" />` : ""}
       <div class="recipe-card-top">
         <h3>${escapeHtml(r.title)}</h3>
         <label class="checkbox-row" title="Add to shopping list" onclick="event.stopPropagation()">

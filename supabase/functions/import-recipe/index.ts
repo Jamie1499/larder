@@ -1,7 +1,7 @@
 // Supabase Edge Function: import-recipe
 // Paste this into Supabase dashboard -> Edge Functions -> New function ("import-recipe").
 // Fetches a recipe URL server-side (avoids browser CORS) and extracts the
-// page's schema.org Recipe JSON-LD, returning { title, ingredients, steps }.
+// page's schema.org Recipe JSON-LD, returning { title, ingredients, steps, image }.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +18,16 @@ function collectRecipes(node: any, found: any[]) {
   const isRecipe = type === "Recipe" || (Array.isArray(type) && type.includes("Recipe"));
   if (isRecipe) found.push(node);
   if (node["@graph"]) collectRecipes(node["@graph"], found);
+}
+
+// schema.org "image" can be a plain URL string, an array of either, or an
+// ImageObject ({ url: "..." }) — pick the first usable URL out of any shape.
+function extractImage(image: any): string {
+  if (!image) return "";
+  if (typeof image === "string") return image;
+  if (Array.isArray(image)) return extractImage(image[0]);
+  if (typeof image === "object" && image.url) return String(image.url);
+  return "";
 }
 
 function flattenInstructions(instr: any): string[] {
@@ -71,8 +81,9 @@ Deno.serve(async (req) => {
       ? recipe.recipeIngredient.map((i: any) => String(i).trim()).filter(Boolean)
       : [];
     const steps = flattenInstructions(recipe.recipeInstructions);
+    const image = extractImage(recipe.image);
 
-    return new Response(JSON.stringify({ title, ingredients, steps }), {
+    return new Response(JSON.stringify({ title, ingredients, steps, image }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

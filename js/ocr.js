@@ -1,6 +1,7 @@
 import { parseLegacyIngredientLine, classifyLine } from "./ingredients.js";
 import { appendLine } from "./voice.js";
-import { addIngredientRow, removeEmptyIngredientRows } from "./modal.js";
+import { addIngredientRow, removeEmptyIngredientRows, setRecipeImage } from "./modal.js";
+import { uploadRecipeImage } from "./images.js";
 
 // ---------- Photo scanning (on-device OCR) ----------
 export function resetImportTools() {
@@ -75,6 +76,15 @@ export async function handlePhotoScan(files) {
       ` — check the fields above and fix anything that landed in the wrong place. Recognised text is below for reference.`;
     results.classList.remove("hidden");
     allLines.forEach((line) => results.appendChild(buildOcrLine(line)));
+
+    if (!document.getElementById("recipe-image-url").value) {
+      try {
+        const url = await uploadRecipeImage(document.getElementById("recipe-id").value, files[0]);
+        setRecipeImage(url);
+      } catch {
+        // Non-critical — the scan itself already succeeded, just skip the photo.
+      }
+    }
   } catch {
     status.textContent = "Something went wrong reading that photo. Try a clearer, well-lit shot.";
   }
