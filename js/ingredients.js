@@ -24,9 +24,32 @@ export function fractionToDecimal(token) {
   return parseFloat(token);
 }
 
+// Unicode "vulgar fraction" characters (½, ¼, ...) show up constantly in real
+// recipe sites and OCR text but aren't digits our regexes recognise — convert
+// them to plain "n/d" text first so quantity detection actually sees them.
+const VULGAR_FRACTIONS = {
+  "¼": "1/4", "½": "1/2", "¾": "3/4",
+  "⅓": "1/3", "⅔": "2/3",
+  "⅕": "1/5", "⅖": "2/5", "⅗": "3/5", "⅘": "4/5",
+  "⅙": "1/6", "⅚": "5/6",
+  "⅐": "1/7",
+  "⅛": "1/8", "⅜": "3/8", "⅝": "5/8", "⅞": "7/8",
+  "⅑": "1/9",
+  "⅒": "1/10",
+};
+const VULGAR_FRACTION_CHARS = "¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞⅑⅒";
+
+export function normalizeFractionText(str) {
+  return (str || "")
+    // "1½" (mixed number, no space) -> "1 1/2"
+    .replace(new RegExp(`(\\d)\\s*([${VULGAR_FRACTION_CHARS}])`, "g"), (_, whole, frac) => `${whole} ${VULGAR_FRACTIONS[frac]}`)
+    // any remaining standalone fraction char, e.g. leading "½ onion" -> "1/2 onion"
+    .replace(new RegExp(`[${VULGAR_FRACTION_CHARS}]`, "g"), (frac) => VULGAR_FRACTIONS[frac]);
+}
+
 // Parses free-text quantity input like "1 1/2", "1/2", "2.5" into a decimal.
 export function parseQtyInput(str) {
-  const trimmed = (str || "").trim();
+  const trimmed = normalizeFractionText((str || "").trim());
   if (!trimmed) return null;
   if (/^\d+\s+\d+\/\d+$/.test(trimmed)) {
     const [whole, frac] = trimmed.split(/\s+/);
@@ -72,37 +95,40 @@ export function formatIngredient(ing) {
   return parts.join(" ").trim();
 }
 
+// Bare unit words that are ambiguous as a lone leading word ("Whole milk" is
+// an ingredient name, not "1 whole" + "milk") are excluded from the
+// implied-quantity-1 heuristic below.
+const AMBIGUOUS_LEADING_UNITS = ["whole"];
+
 // Legacy free-text parser, used only to migrate recipes saved before the
 // structured ingredient editor existed (raw strings like "2 cups flour").
+// Slices the recognised qty/unit prefix off the front rather than
+// re-joining the remainder, so punctuation/spacing in the name (e.g.
+// "good-quality sausages") survives untouched.
 export function parseLegacyIngredientLine(raw) {
-  const line = raw.trim();
-  const match = line.match(
-    /^((?:\d+\s+\d+\/\d+)|(?:\d+\/\d+)|(?:\d+(?:\.\d+)?))?\s*([a-zA-Z]+)?\s*(.*)$/
-  );
+  const line = normalizeFractionText(raw.trim());
+
   let qty = null;
+  let rest = line;
+  const qtyMatch = line.match(/^(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)/);
+  if (qtyMatch) {
+    qty = parseQtyInput(qtyMatch[0]);
+    rest = line.slice(qtyMatch[0].length).trimStart();
+  }
+
   let unit = "";
-  let name = line;
-
-  if (match) {
-    const qtyToken = match[1];
-    const rest2 = match[2] || "";
-    const rest3 = match[3] || "";
-
-    if (qtyToken) {
-      qty = parseQtyInput(qtyToken);
-      const possibleUnit = rest2.toLowerCase();
-      if (UNITS.includes(possibleUnit)) {
-        unit = normalizeUnit(possibleUnit);
-        name = rest3.trim();
-      } else {
-        name = [rest2, rest3].filter(Boolean).join(" ").trim();
-      }
-    } else {
-      name = line;
+  const unitMatch = rest.match(/^[a-zA-Z]+\b/);
+  if (unitMatch) {
+    const word = unitMatch[0].toLowerCase();
+    const canImplyQty = qty !== null || !AMBIGUOUS_LEADING_UNITS.includes(word);
+    if (UNITS.includes(word) && canImplyQty) {
+      unit = normalizeUnit(word);
+      rest = rest.slice(unitMatch[0].length).trimStart();
+      if (qty === null) qty = 1;
     }
   }
 
-  return { qty, unit, name: (name || line).trim() };
+  return { qty, unit, name: (rest || line).trim() };
 }
 
 // Common cooking-instruction verbs — a line opening with one of these is
@@ -123,7 +149,7 @@ const STEP_VERBS = [
 // method step, so photo/URL imports can auto-fill the right field instead of
 // requiring the user to place every line by hand.
 export function classifyLine(line) {
-  const trimmed = line.trim();
+  const trimmed = normalizeFractionText(line.trim());
   const hasLeadingQty = /^(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\b/.test(trimmed);
   const hasUnitWord = UNITS.some((u) => new RegExp(`\\b${u}\\b`, "i").test(trimmed));
   const startsWithStepVerb = STEP_VERBS.some((v) => new RegExp(`^${v}\\b`, "i").test(trimmed));
