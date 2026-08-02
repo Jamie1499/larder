@@ -4,25 +4,38 @@ import { seedIfEmpty } from "./js/seed.js";
 import { setRecipes, setSelection, setChecked, setCurrentView, setCurrentRecipeId } from "./js/state.js";
 import { setupModal } from "./js/modal.js";
 import { render } from "./js/render.js";
+import { setupAuth } from "./js/auth.js";
 
-function init() {
-  seedIfEmpty();
-  const recipes = loadRecipes();
+let tabsReady = false;
+let modalReady = false;
+
+async function init() {
+  await seedIfEmpty();
+  const recipes = await loadRecipes();
   if (migrateRecipes(recipes)) saveRecipes(recipes);
   setRecipes(recipes);
-  setSelection(loadSelection());
-  setChecked(loadChecked());
+  setSelection(await loadSelection());
+  setChecked(await loadChecked());
 
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      setCurrentView(btn.dataset.view);
-      setCurrentRecipeId(null);
-      render();
+  if (!tabsReady) {
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setCurrentView(btn.dataset.view);
+        setCurrentRecipeId(null);
+        render();
+      });
     });
-  });
+    tabsReady = true;
+  }
 
-  setupModal();
+  if (!modalReady) {
+    setupModal();
+    modalReady = true;
+  }
+
+  setCurrentView("recipes");
+  setCurrentRecipeId(null);
   render();
 }
 
-init();
+setupAuth(init, () => {});

@@ -5,8 +5,8 @@ function ing(qty, unit, name) {
   return { qty, unit, name };
 }
 
-export function seedIfEmpty() {
-  if (loadRecipes().length > 0) return;
+export async function seedIfEmpty() {
+  if ((await loadRecipes()).length > 0) return;
   const seed = [
     {
       id: crypto.randomUUID(),
@@ -57,5 +57,5 @@ export function seedIfEmpty() {
       createdAt: Date.now(),
     },
   ];
-  saveRecipes(seed);
+  await saveRecipes(seed);
 }
